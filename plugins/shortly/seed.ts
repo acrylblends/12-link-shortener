@@ -2,8 +2,12 @@
 import type { ClickEvent, Domain, ReferrerStat, ShortLink, ShortlyState } from './domain.ts'
 import { stampOf } from './domain.ts'
 
-function distribute(total: number): number[] {
-  const weights = Array.from({ length: 30 }, (_, index) => 1 + index * 0.045)
+function distribute(total: number, seed: number): number[] {
+  const jitter = (n: number): number => {
+    const value = Math.sin(n * 12.9898 + seed * 78.233) * 43_758.5453
+    return value - Math.floor(value)
+  }
+  const weights = Array.from({ length: 30 }, (_, index) => (1 + index * 0.045) * (0.7 + jitter(index) * 0.6))
   const sum = weights.reduce((carry, weight) => carry + weight, 0)
   const values = weights.map((weight) => Math.round((weight / sum) * total))
   const difference = total - values.reduce((carry, value) => carry + value, 0)
@@ -41,7 +45,7 @@ export function seed(now: Date, newId: (kind: string) => string): ShortlyState {
     { id: newId('domain'), hostname: 'acme.link', verified: true, default: false },
     { id: newId('domain'), hostname: 'short.acme.to', verified: false, default: false },
   ]
-  const links: ShortLink[] = LINKS.map((item) => ({
+  const links: ShortLink[] = LINKS.map((item, index) => ({
     id: newId('link'),
     slug: item.slug,
     destinationUrl: item.destinationUrl,
@@ -52,8 +56,48 @@ export function seed(now: Date, newId: (kind: string) => string): ShortlyState {
     enabled: item.enabled !== false,
     views: item.views,
     clicks: item.clicks,
-    daily: distribute(item.clicks),
+    daily: distribute(item.clicks, index + 1),
   }))
+  for (let index = 0; index < 29; index += 1) {
+    links.push({
+      id: newId('link'),
+      slug: `resource-${String(index + 1)}`,
+      destinationUrl: `https://acme.studio/resources/page-${String(index + 1)}`,
+      title: `Resource ${String(index + 1)}`,
+      tags: ['resources'],
+      createdAt: at(240 + index * 8),
+      enabled: true,
+      views: 0,
+      clicks: 0,
+      daily: Array.from({ length: 30 }, () => 0),
+    })
+  }
+  links.push({
+    id: newId('link'),
+    slug: 'spring-sale',
+    destinationUrl: 'https://acme.studio/spring-sale',
+    title: 'Spring sale',
+    tags: ['campaign', 'email'],
+    createdAt: at(900),
+    expiresAt: '2026-10-15',
+    enabled: true,
+    views: 0,
+    clicks: 0,
+    daily: Array.from({ length: 30 }, () => 0),
+  })
+  links.push({
+    id: newId('link'),
+    slug: 'winter-preview',
+    destinationUrl: 'https://acme.studio/winter-preview',
+    title: 'Winter preview',
+    tags: ['campaign'],
+    createdAt: at(1_100),
+    expiresAt: '2026-10-01',
+    enabled: true,
+    views: 0,
+    clicks: 0,
+    daily: Array.from({ length: 30 }, () => 0),
+  })
   const total = links.reduce((sum, link) => sum + link.clicks, 0)
   const referrers: ReferrerStat[] = [
     { source: 'instagram.com', clicks: Math.round(total * 0.31) },
@@ -62,12 +106,22 @@ export function seed(now: Date, newId: (kind: string) => string): ShortlyState {
     { source: 'linkedin.com', clicks: Math.round(total * 0.12) },
     { source: 'other', clicks: total - Math.round(total * 0.31) - Math.round(total * 0.24) - Math.round(total * 0.17) - Math.round(total * 0.12) },
   ]
-  const events: ClickEvent[] = [
-    { id: newId('click'), linkId: links[0]?.id ?? '', at: at(1), referrer: 'instagram.com', country: 'DE', device: 'mobile' },
-    { id: newId('click'), linkId: links[1]?.id ?? '', at: at(3), referrer: 'google.com', country: 'NL', device: 'desktop' },
-    { id: newId('click'), linkId: links[2]?.id ?? '', at: at(8), referrer: 'linkedin.com', country: 'GB', device: 'desktop' },
-    { id: newId('click'), linkId: links[3]?.id ?? '', at: at(20), referrer: 'direct / none', country: 'FR', device: 'tablet' },
-    { id: newId('click'), linkId: links[4]?.id ?? '', at: at(30), referrer: 'google.com', country: 'ES', device: 'mobile' },
-  ]
-  return { version: 1, links, domains, referrers, events }
+  const sources = ['instagram.com', 'google.com', 'direct / none', 'linkedin.com']
+  const countries = ['DE', 'NL', 'GB', 'FR', 'ES', 'AT', 'US']
+  const devices = ['mobile', 'desktop', 'tablet']
+  const events: ClickEvent[] = []
+  for (let index = 0; index < 5; index += 1) {
+    const link = links[index] as ShortLink
+    for (let sample = 0; sample < 24; sample += 1) {
+      events.push({
+        id: newId('click'),
+        linkId: link.id,
+        at: at(1 + sample * 1.1 + index * 2),
+        referrer: sources[(index + sample) % sources.length] as string,
+        country: countries[(index * 2 + sample) % countries.length] as string,
+        device: devices[(index + sample) % devices.length] as string,
+      })
+    }
+  }
+  return { version: 1, links, domains, referrers, events, previousClicks: 25_258, previousViews: 598_500 }
 }

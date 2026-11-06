@@ -23,23 +23,28 @@ test('a destination must be an absolute http(s) URL and an alias is short and cl
   assert.throws(() => cleanSlug('a'), /3 to 40/)
 })
 
-test('the seed has eight links, three domains and the mockup totals', () => {
+test('the seed is the mockup workspace: 39 links, 36 active, 28,491 clicks and its deltas', () => {
   const state = seed(NOW, newId)
-  assert.equal(state.links.length, 8)
+  assert.equal(state.links.length, 39)
   assert.equal(state.domains.length, 3)
   assert.equal(state.links.reduce((sum, link) => sum + link.clicks, 0), 28_491)
-  const stats = statsOf(state.links, state.referrers, NOW)
+  const stats = statsOf(state, NOW)
   assert.equal(stats.clicks, 28_491)
-  assert.ok(Math.abs(stats.ctr - 4.81) < 0.05)
-  assert.equal(stats.active, 7)
-  assert.equal(state.links[7]?.enabled, false)
+  assert.ok(Math.abs(stats.ctr - 4.82) < 0.02)
+  assert.equal(stats.active, 36)
+  assert.equal(stats.createdThisWeek, 6)
+  assert.equal(stats.clickDelta.toFixed(1), '12.8')
+  assert.equal(stats.ctrDelta.toFixed(1), '0.6')
+  assert.equal(state.links.filter((link) => !link.enabled).length, 1)
   assert.equal(state.referrers.reduce((sum, item) => sum + item.clicks, 0), 28_491)
+  assert.equal(state.events.length, 120)
 })
 
 test('filters find a link by text and state', () => {
   const state = seed(NOW, newId)
   assert.ok(filterLinks(state.links, { q: 'pricing' }, NOW).length >= 1)
   assert.ok(filterLinks(state.links, { state: 'disabled' }, NOW).every((link) => !link.enabled))
+  assert.equal(filterLinks(state.links, { state: 'expired' }, NOW).length, 2)
 })
 
 async function open(): Promise<Shortly> {
@@ -83,7 +88,11 @@ test('the overview page shows the composer, the totals and the recent links', ()
     assert.match(page.html, /Create short link/)
     assert.match(page.html, /28,491/)
     assert.match(page.html, /go\.acme\.to\/autumn/)
+    assert.match(page.html, /href="\/links\/link-/)
     assert.match(page.html, /Top referrers/)
+    assert.match(page.html, /36/)
+    assert.match(page.html, /6 created this week/)
+    assert.match(page.html, /12.8% vs previous period/)
   }))
 
 test('the form creates a link and an invalid destination says why', () =>
@@ -104,6 +113,8 @@ test('a link detail shows its chart and the toggle disables it', () =>
     assert.ok(link !== undefined)
     const page = await app.page(`/links/${link.id}`)
     assert.match(page.html, /Click activity/)
+    assert.match(page.html, /Referrers/)
+    assert.match(page.html, /Countries/)
     const toggled = await app.post(`/links/${link.id}/toggle`, { back: `/links/${link.id}` })
     assert.equal(noticeOf(toggled).kind, 'ok')
     assert.equal(app.root.shortly.link(link.id)?.enabled, false)
@@ -122,6 +133,15 @@ test('the short URL redirects and counts the click', () =>
     assert.equal(missing.status, 404)
   }))
 
+test('the campaigns page lists the workspace tags')
+  withApp(async (app) => {
+    const page = await app.page('/campaigns')
+    assert.equal(page.status, 200)
+    assert.match(page.html, /Campaigns/)
+    assert.match(page.html, /campaign/)
+    assert.match(page.html, /resources/)
+  })
+
 test('the domains page lists the domains', () =>
   withApp(async (app) => {
     const page = await app.page('/domains')
@@ -134,7 +154,7 @@ test('health, 404, manifest and the prefix work; assets off leaves the app runni
   await withApp(async (app) => {
     assert.equal((await app.page('/health')).status, 200)
     assert.equal((await app.page('/nope')).status, 404)
-    assert.deepEqual(readManifest().plugins.map((row) => row.id), ['router', 'home', 'shortly', 'shortly-shell', 'links', 'domains', 'extensions', 'server', 'acryl-door'])
+    assert.deepEqual(readManifest().plugins.map((row) => row.id), ['router', 'home', 'shortly', 'shortly-shell', 'links', 'campaigns', 'domains', 'extensions', 'server', 'acryl-door'])
   })
   await withApp(
     async (app) => {

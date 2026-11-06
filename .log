@@ -1,9 +1,0 @@
-
-> link-shortener@0.1.0 prestart
-> node scripts/check-node.cjs
-
-
-> link-shortener@0.1.0 start
-> node --import ./plugins/acryl-node-server/src/register.ts src/main.ts
-
-link-shortener listening on http://127.0.0.1:4712 (data in /Users/musichen/_projects/p11_acr_agentcontextrelay/acryldev/_testfield/batch01/b2/link-shortener/.acrylblends)

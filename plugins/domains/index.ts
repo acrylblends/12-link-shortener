@@ -13,5 +13,5 @@ export function apply(ctx: Context): void {
   const main = `<div class="head"><div><small>WORKSPACE / DOMAINS</small><h1>Short domains</h1><p>The domains a short link can live on. Verification is recorded here; DNS is not changed by this app.</p></div></div><section class="panel"><div class="panelhead"><div><h2>Domains</h2><small>${String(shortly.domains().length)} configured</small></div></div><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:9px;font-size:8px;color:#82928c">DOMAIN</th><th style="text-align:left;padding:9px;font-size:8px;color:#82928c">STATE</th><th style="text-align:left;padding:9px;font-size:8px;color:#82928c">USE</th></tr></thead><tbody>${rows}</tbody></table></section>`
   const app = new Acryl().get('/domains', (c) => c.html(shell.page({ active: 'domains', title: 'Domains', main })))
   ctx.router.route(prefix === '' ? '/' : prefix, app)
-  ctx.effect(() => shell.nav({ id: 'domains', label: 'Domains', icon: '', path: '/domains', order: 30, count: () => shortly.domains().length }))
+  ctx.effect(() => shell.nav({ id: 'domains', label: 'Domains', icon: '', path: '/domains', order: 30 }))
 }

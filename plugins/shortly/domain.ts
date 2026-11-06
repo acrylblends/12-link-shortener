@@ -41,6 +41,9 @@ export interface ShortlyState {
   domains: Domain[]
   referrers: ReferrerStat[]
   events: ClickEvent[]
+  /** The previous 30-day period, for the mockup's deltas. */
+  readonly previousClicks: number
+  readonly previousViews: number
 }
 
 export type ShortlyErrorCode = 'invalid' | 'not-found' | 'conflict'
@@ -112,7 +115,7 @@ export function filterLinks(links: readonly ShortLink[], filter: LinkFilter, now
   return links
     .filter((link) => filter.state === undefined || (filter.state === 'active' ? isActive(link, now) : filter.state === 'expired' ? isExpired(link, now) : !link.enabled))
     .filter((link) => q === '' || [link.slug, link.destinationUrl, link.title, ...link.tags].join(' ').toLowerCase().includes(q))
-    .sort((a, b) => b.clicks - a.clicks)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
 export interface LinkStats {
@@ -120,16 +123,27 @@ export interface LinkStats {
   readonly active: number
   readonly topReferrer: string
   readonly ctr: number
+  readonly createdThisWeek: number
+  readonly clickDelta: number
+  readonly ctrDelta: number
+  readonly total: number
 }
 
-export function statsOf(links: readonly ShortLink[], referrers: readonly ReferrerStat[], now: Date): LinkStats {
-  const views = links.reduce((sum, link) => sum + link.views, 0)
-  const clicks = links.reduce((sum, link) => sum + link.clicks, 0)
+export function statsOf(state: ShortlyState, now: Date): LinkStats {
+  const views = state.links.reduce((sum, link) => sum + link.views, 0)
+  const clicks = state.links.reduce((sum, link) => sum + link.clicks, 0)
+  const ctr = views === 0 ? 0 : (clicks / views) * 100
+  const previousCtr = state.previousViews === 0 ? 0 : (state.previousClicks / state.previousViews) * 100
+  const weekAgo = new Date(now.getTime() - 7 * 86_400_000).toISOString()
   return {
     clicks,
-    active: links.filter((link) => isActive(link, now)).length,
-    topReferrer: referrers[0]?.source ?? 'None',
-    ctr: views === 0 ? 0 : (clicks / views) * 100,
+    active: state.links.filter((link) => isActive(link, now)).length,
+    topReferrer: state.referrers[0]?.source ?? 'None',
+    ctr,
+    createdThisWeek: state.links.filter((link) => link.createdAt >= weekAgo).length,
+    clickDelta: state.previousClicks === 0 ? 0 : ((clicks - state.previousClicks) / state.previousClicks) * 100,
+    ctrDelta: ctr - previousCtr,
+    total: state.links.length,
   }
 }
 

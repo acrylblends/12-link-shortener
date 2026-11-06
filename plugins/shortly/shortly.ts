@@ -84,7 +84,7 @@ export class Shortly {
   }
 
   stats(): LinkStats {
-    return statsOf(this.state.links, this.state.referrers, this.now)
+    return statsOf(this.state, this.now)
   }
 
   series(linkId?: string): number[] {
