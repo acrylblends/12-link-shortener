@@ -1,0 +1,39 @@
+apiVersion: blends.acryl.dev/v1alpha1
+kind: Blueprint
+metadata:
+  id: acrylblends.link-shortener
+  name: "Link Shortener"
+  version: 0.1.0
+  category: internet
+  description: "Create branded short links with a real redirect, click counts, referrers and link state."
+  license: MIT
+  visibility: public
+spec:
+  runtime: cordis
+  parameters:
+    hostname: { type: string, default: 127.0.0.1 }
+  rows:
+    - id: router
+      name: acryl-router
+    - id: home
+      name: home
+    # The domain: links, domains, referrer totals and click events, saved as JSON in the app's data home.
+    - id: shortly
+      name: shortly
+    # The compact green top bar with the workspace links.
+    - id: shortly-shell
+      name: shortly-shell
+    # The workspace: create composer, KPI strip, recent links, chart and referrers, one link's detail and the redirect.
+    - id: links
+      name: links
+    # The short domains and their verification state.
+    - id: domains
+      name: domains
+    - id: extensions
+      name: extensions
+    - id: server
+      name: acryl-node-server
+      config:
+        hostname: "{{parameters.hostname}}"
+    - id: acryl-door
+      name: acryl-door

@@ -1,17 +1,22 @@
 # Link Shortener
 
-Create branded short URLs and inspect click activity, referrers and link state.
+A light link-management workspace: create branded short links with a real redirect, watch clicks and referrers, and enable or disable a link.
 
-An ACRYL Blends blueprint for the **Internet** category (`acrylblends.link-shortener`, category 12 of 100).
-
-Status: designed, being built. `design/spec.md` is the specification and `design/mockup.html` the mockup (open it in a browser). The app itself,
-composed from Cordis plugins (one `plugins/<feature>/` folder and one `blend.yaml` row per feature), lands here when it passes review.
-
-When it is ready you will start it with:
+## Run it
 
 ```sh
-npm create acrylblends@latest my-app -- --from acrylblends.link-shortener
-cd my-app && npm install && npm run dev
+npm install
+npm start
 ```
 
-Listed on https://acrylblends.github.io/blends and https://acryl.dev/blends.
+Open the address it prints. `npm test` runs the tests (node:test; no network, no key).
+
+## What to ask the chat next
+
+- Create a short link for a new campaign page and copy it.
+- Disable a link and check that its redirect stops working.
+- Open a link's detail page and compare its click activity with the referrer totals.
+
+## Screenshot
+
+![Link Shortener](docs/screenshot.png)
